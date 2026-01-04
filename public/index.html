@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artalk QMSG Webhook 仪表盘</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            overflow: hidden;
+            border: 1px solid #ddd;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #333 0%, #555 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-left: 4px solid #666;
+        }
+
+        .status-card h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .status-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            font-weight: 500;
+            color: #555;
+        }
+
+        .status-value {
+            font-weight: 600;
+            color: #222;
+        }
+
+        .status-value {
+            font-weight: 600;
+        }
+
+        .status-value.online {
+            color: #444;
+            font-weight: 700;
+        }
+
+        .status-value.offline {
+            color: #888;
+            font-weight: 500;
+        }
+
+        .status-value.pending {
+            color: #666;
+            font-weight: 600;
+        }
+
+        .info-section {
+            margin-top: 40px;
+        }
+
+        .info-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .info-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            transition: transform 0.2s;
+            border: 1px solid #eee;
+        }
+
+        .info-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .info-card h3 {
+            color: #444;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .info-card p {
+            color: #555;
+            font-size: 0.95rem;
+        }
+
+        .actions {
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #333;
+            color: white;
+            border: 1px solid #222;
+        }
+
+        .btn-primary:hover {
+            background: #444;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+
+        .btn-secondary:hover {
+            background: #e8e8e8;
+            transform: translateY(-1px);
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9rem;
+            border-top: 1px solid #ddd;
+            background: #f5f5f5;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #333;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Artalk QMSG Webhook</h1>
+            <p>评论通知转发服务仪表盘</p>
+        </div>
+
+        <div class="content">
+            <div class="status-card">
+                <h2>服务状态</h2>
+                <div class="status-item">
+                    <span class="status-label">Webhook API</span>
+                    <span id="api-status" class="status-value pending">
+                        <span class="loading"></span> 检查中...
+                    </span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">QMSG 连接</span>
+                    <span id="qmsg-status" class="status-value pending">
+                        <span class="loading"></span> 检查中...
+                    </span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">最后更新</span>
+                    <span id="last-update" class="status-value">-</span>
+                </div>
+            </div>
+
+            <div class="info-section">
+                <h2>使用说明</h2>
+                <div class="info-grid">
+                    <div class="info-card">
+                        <h3>Webhook URL</h3>
+                        <p id="webhook-url">正在获取...</p>
+                    </div>
+                    <div class="info-card">
+                        <h3>请求方法</h3>
+                        <p>POST application/json</p>
+                    </div>
+                    <div class="info-card">
+                        <h3>环境变量</h3>
+                        <p>已配置: <span id="env-count">0</span> 个</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="actions">
+                <a href="https://artalk.js.org/" target="_blank" class="btn btn-primary">Artalk 文档</a>
+                <a href="https://qmsg.zendee.cn/" target="_blank" class="btn btn-secondary">QMSG 文档</a>
+                <button onclick="refreshStatus()" class="btn btn-secondary">刷新状态</button>
+                <button onclick="testWebhook()" class="btn btn-primary">测试Webhook</button>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>© 2024 Artalk QMSG Webhook | 部署于 Vercel</p>
+        </div>
+    </div>
+
+    <script>
+        async function checkStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                
+                // 更新API状态
+                const apiStatus = document.getElementById('api-status');
+                apiStatus.innerHTML = data.api.online ? 
+                    '<span class="status-value online">在线 ✓</span>' : 
+                    '<span class="status-value offline">离线 ✗</span>';
+                
+                // 更新QMSG状态
+                const qmsgStatus = document.getElementById('qmsg-status');
+                qmsgStatus.innerHTML = data.qmsg.configured ? 
+                    '<span class="status-value online">已配置 ✓</span>' : 
+                    '<span class="status-value offline">未配置 ✗</span>';
+                
+                // 更新最后更新时间
+                document.getElementById('last-update').textContent = new Date().toLocaleString('zh-CN');
+                
+                // 更新Webhook URL
+                document.getElementById('webhook-url').textContent = window.location.origin + '/webhook';
+                
+                // 更新环境变量计数
+                document.getElementById('env-count').textContent = data.envCount || 0;
+                
+            } catch (error) {
+                console.error('检查状态失败:', error);
+                document.getElementById('api-status').innerHTML = 
+                    '<span class="status-value offline">检查失败 ✗</span>';
+                document.getElementById('qmsg-status').innerHTML = 
+                    '<span class="status-value offline">检查失败 ✗</span>';
+            }
+        }
+
+        async function refreshStatus() {
+            const apiStatus = document.getElementById('api-status');
+            const qmsgStatus = document.getElementById('qmsg-status');
+            
+            apiStatus.innerHTML = '<span class="loading"></span> 检查中...';
+            qmsgStatus.innerHTML = '<span class="loading"></span> 检查中...';
+            
+            await checkStatus();
+        }
+
+        async function testWebhook() {
+            try {
+                const testData = {
+                    comment: {
+                        id: 999,
+                        nick: "测试用户",
+                        content: "这是一个测试评论，用于验证Webhook功能是否正常工作。",
+                        date: new Date().toISOString()
+                    },
+                    parent_comment: {
+                        nick: "原评论作者"
+                    }
+                };
+
+                const response = await fetch('/webhook', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testData)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('✅ Webhook测试成功！消息已发送到QMSG。');
+                } else {
+                    alert('❌ Webhook测试失败：' + (result.reason || '未知错误'));
+                }
+            } catch (error) {
+                alert('❌ 测试请求失败：' + error.message);
+            }
+        }
+
+        // 页面加载时检查状态
+        document.addEventListener('DOMContentLoaded', checkStatus);
+        
+        // 每30秒自动刷新状态
+        setInterval(checkStatus, 30000);
+    </script>
+</body>
+</html>
