@@ -4,8 +4,10 @@
 
 ## 功能
 
+- 完全兼容Artalk官方Webhook格式
 - 接收Artalk的Webhook POST请求
-- 解析评论数据并格式化消息
+- 使用notify_body作为消息内容直接转发到QMSG
+- 自动处理消息长度和格式优化
 - 通过QMSG API发送消息到指定QQ群
 - 返回处理结果给Artalk
 
@@ -81,7 +83,9 @@ npm run deploy
 
 ## 功能特性
 
-- ✅ 接收Artalk Webhook并转发到QMSG
+- ✅ 完全兼容Artalk官方Webhook格式
+- ✅ 直接使用notify_body作为消息内容
+- ✅ 自动消息长度优化和格式清理
 - ✅ 实时服务状态监控仪表盘
 - ✅ 自动环境变量检查
 - ✅ 一键测试Webhook功能
@@ -97,15 +101,32 @@ npm run deploy
 
 ```json
 {
+  "notify_subject": "新评论通知",
+  "notify_body": "@测试用户:\n\n测试内容\n\nhttps://127.0.0.1/index.html?atk_comment=1057",
   "comment": {
-    "id": 123,
-    "nick": "张三",
-    "content": "这篇文章写得很好！",
-    "date": "2024-01-04 18:30:00"
+    "id": 1057,
+    "content": "测试内容",
+    "user_id": 226,
+    "nick": "测试用户",
+    "email_encrypted": "654236c1e78i4c09a17c4869c9d43910",
+    "link": "https://qwqaq.com",
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_4_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.64 Safari/537.36",
+    "date": "2022-05-23 17:00:23",
+    "is_collapsed": false,
+    "is_pending": false,
+    "is_pinned": false,
+    "is_allow_reply": false,
+    "rid": 0,
+    "badge_name": "",
+    "badge_color": "",
+    "visible": true,
+    "vote_up": 0,
+    "vote_down": 0,
+    "page_key": "/index.html",
+    "page_url": "https://127.0.0.1/index.html",
+    "site_name": "ArtalkDocs"
   },
-  "parent_comment": {
-    "nick": "李四"
-  }
+  "parent_comment": null
 }
 ```
 

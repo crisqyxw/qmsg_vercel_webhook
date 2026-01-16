@@ -2,17 +2,18 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     try {
       const data = req.body;
-      const comment = data.comment;
-      const parentComment = data.parent_comment;
+      const { notify_subject, notify_body, comment, parent_comment } = data;
 
-      let message = `新评论通知：\n`;
-      message += `评论ID：${comment.id}\n`;
-      message += `评论者：${comment.nick}\n`;
-      message += `评论内容：${comment.content}\n`;
-      message += `评论时间：${comment.date}`;
+      if (!notify_body) {
+        return res.status(400).json({
+          success: false,
+          reason: 'Missing required field: notify_body'
+        });
+      }
 
-      if (parentComment) {
-        message += `\n回复给：${parentComment.nick}`;
+      let message = notify_body;
+      if (notify_subject) {
+        message = `【${notify_subject}】\n\n${message}`;
       }
 
       const qmsgResponse = await sendMessageToQmsg(message);
@@ -48,7 +49,8 @@ async function sendMessageToQmsg(message) {
     };
   }
 
-  const url = `https://qmsg.zendee.cn/send/${qmsgKey}?msg=${encodeURIComponent(message)}&qq=${targetQqGroup}`;
+  const cleanedMessage = cleanMessageForQmsg(message);
+  const url = `https://qmsg.zendee.cn/send/${qmsgKey}?msg=${encodeURIComponent(cleanedMessage)}&qq=${targetQqGroup}`;
 
   try {
     const response = await fetch(url, {
@@ -68,4 +70,16 @@ async function sendMessageToQmsg(message) {
       reason: 'Failed to send message to Qmsg'
     };
   }
+}
+
+function cleanMessageForQmsg(message) {
+  let cleaned = message;
+  
+  if (cleaned.length > 1000) {
+    cleaned = cleaned.substring(0, 997) + '...';
+  }
+  
+  cleaned = cleaned.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  
+  return cleaned;
 }
