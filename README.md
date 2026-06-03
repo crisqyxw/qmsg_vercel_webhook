@@ -1,15 +1,17 @@
-# Artalk QMSG Webhook
+# QMSG Webhook
 
-将Artalk评论通知转发到QMSG QQ群的服务，部署在Vercel上。
+将消息通知转发到QMSG QQ群的服务，部署在Vercel上。
+
+支持多种通知格式：
+- Artalk 评论通知
+- 额度预警通知（余额/配额告警）
 
 ## 功能
 
 - 完全兼容Artalk官方Webhook格式
-- 接收Artalk的Webhook POST请求
-- 使用notify_body作为消息内容直接转发到QMSG
-- 自动处理消息长度和格式优化
-- 通过QMSG API发送消息到指定QQ群
-- 返回处理结果给Artalk
+- 支持额度预警通知格式（余额/配额告警）
+- `/webhook` 端点自动检测请求格式，同时兼容两种格式
+- 接收Webhook POST请求并转发消息到QMSG
 
 ## 部署到Vercel
 
@@ -84,7 +86,8 @@ npm run deploy
 ## 功能特性
 
 - ✅ 完全兼容Artalk官方Webhook格式
-- ✅ 直接使用notify_body作为消息内容
+- ✅ 支持额度预警通知格式
+- ✅ /webhook端点自动检测格式（按 notify_body / type 字段区分）
 - ✅ 自动消息长度优化和格式清理
 - ✅ 实时服务状态监控仪表盘
 - ✅ 自动环境变量检查
@@ -93,11 +96,13 @@ npm run deploy
 
 ## API端点
 
-- `POST /webhook` - 接收Artalk Webhook请求
+- `POST /webhook` - 接收Webhook请求（自动检测Artalk和额度预警两种格式）
 - `GET /api/status` - 获取服务状态信息
 - `GET /` - 仪表盘页面
 
 ## 请求示例
+
+### Artalk评论通知格式
 
 ```json
 {
@@ -128,6 +133,39 @@ npm run deploy
   },
   "parent_comment": null
 }
+```
+
+### 额度预警通知格式
+
+发送到 `/webhook` 即可，服务会自动检测格式：
+
+```json
+{
+  "type": "quota_exceed",
+  "title": "额度预警通知",
+  "content": "您的额度即将用尽，当前剩余额度为 {{value}}",
+  "values": [
+    "$0.99"
+  ],
+  "timestamp": 1739950503
+}
+```
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `type` | string | ✅ | 预警类型，如 `quota_exceed` |
+| `title` | string | ✅ | 预警标题 |
+| `content` | string | ✅ | 预警内容，`{{value}}` 会被替换为 `values[0]` |
+| `values` | array | - | 替换占位符的值 |
+| `timestamp` | number | - | Unix时间戳（秒），会自动格式化为北京时间 |
+
+实际发送到QQ群的消息示例：
+
+```
+【额度预警通知】
+
+您的额度即将用尽，当前剩余额度为 $0.99
+时间: 2026/2/19 17:35:03
 ```
 
 ## 响应示例
