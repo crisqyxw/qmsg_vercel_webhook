@@ -335,15 +335,8 @@
         async function testWebhook() {
             try {
                 const testData = {
-                    comment: {
-                        id: 999,
-                        nick: "测试用户",
-                        content: "这是一个测试评论，用于验证Webhook功能是否正常工作。",
-                        date: new Date().toISOString()
-                    },
-                    parent_comment: {
-                        nick: "原评论作者"
-                    }
+                    notify_subject: "测试评论",
+                    notify_body: "用户 测试用户 发表了评论：\n\n这是一个测试评论，用于验证Webhook功能是否正常工作。\n\n时间: " + new Date().toLocaleString('zh-CN')
                 };
 
                 const response = await fetch('/webhook', {

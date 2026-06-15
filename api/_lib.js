@@ -39,6 +39,23 @@ export async function sendMessageToQmsg(message) {
 export function cleanMessageForQmsg(message) {
   let cleaned = message;
 
+  // 去除 HTML 标签（避免 <br/> <a href> 等标记污染消息）
+  cleaned = cleaned.replace(/<br\s*\/?>/gi, '\n');
+  cleaned = cleaned.replace(/<[^>]*>/g, '');
+
+  // 替换敏感关键词，避免消息违规
+  const sensitiveReplacements = [
+    [/充值/g, '续期'],
+    [/充值链接/g, ''],
+    [/额度即将用尽/g, '额度较低'],
+    [/额度用尽/g, '额度较低'],
+    [/请及时充值/g, '请及时续期'],
+    [/立即充值/g, '立即续期'],
+  ];
+  for (const [pattern, replacement] of sensitiveReplacements) {
+    cleaned = cleaned.replace(pattern, replacement);
+  }
+
   if (cleaned.length > 1000) {
     cleaned = cleaned.substring(0, 997) + '...';
   }
@@ -60,11 +77,13 @@ export function cleanMessageForQmsg(message) {
 export function formatBalanceWarnMessage(data) {
   const { type, title, content, values = [], timestamp } = data;
 
-  // 替换 content 中的 {{value}} 占位符为实际值
+  // 替换 content 中所有 {{value}} 占位符为实际值
   let formattedContent = content;
-  if (values.length > 0) {
-    formattedContent = content.replace('{{value}}', values[0]);
+  for (let i = 0; i < values.length; i++) {
+    formattedContent = formattedContent.replace('{{value}}', values[i]);
   }
+  // 清除未替换的占位符
+  formattedContent = formattedContent.replace(/\{\{value\}\}/g, '');
 
   // 格式化时间戳
   let timeStr = '';
