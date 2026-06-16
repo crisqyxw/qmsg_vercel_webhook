@@ -43,14 +43,18 @@ export function cleanMessageForQmsg(message) {
   cleaned = cleaned.replace(/<br\s*\/?>/gi, '\n');
   cleaned = cleaned.replace(/<[^>]*>/g, '');
 
+  // QMSG 违规检测禁止 URL 和 IPv4；余额等短数字保留显示。
+  cleaned = cleaned.replace(/https?:\/\/\S+/gi, '');
+  cleaned = cleaned.replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, '');
+
   // 替换敏感关键词，避免消息违规
   const sensitiveReplacements = [
-    [/充值/g, '续期'],
     [/充值链接/g, ''],
+    [/请及时充值/g, '请及时处理'],
+    [/立即充值/g, '立即处理'],
+    [/充值/g, '续期'],
     [/额度即将用尽/g, '额度较低'],
     [/额度用尽/g, '额度较低'],
-    [/请及时充值/g, '请及时续期'],
-    [/立即充值/g, '立即续期'],
   ];
   for (const [pattern, replacement] of sensitiveReplacements) {
     cleaned = cleaned.replace(pattern, replacement);
@@ -62,7 +66,7 @@ export function cleanMessageForQmsg(message) {
 
   cleaned = cleaned.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
-  return cleaned;
+  return cleaned.trim();
 }
 
 /**
@@ -76,6 +80,10 @@ export function cleanMessageForQmsg(message) {
  */
 export function formatBalanceWarnMessage(data) {
   const { type, title, content, values = [], timestamp } = data;
+
+  if (type === 'quota_exceed') {
+    return rewriteQuotaExceededMessage(data);
+  }
 
   // 替换 content 中所有 {{value}} 占位符为实际值
   let formattedContent = content;
@@ -93,11 +101,24 @@ export function formatBalanceWarnMessage(data) {
   }
 
   const typeLabels = {
-    'quota_exceed': '⚠️ 额度预警',
+    'quota_exceed': '额度提醒',
   };
 
   const typeLabel = typeLabels[type] || type;
   const titleLine = title ? `【${title}】` : `【${typeLabel}】`;
 
   return `${titleLine}\n\n${formattedContent}${timeStr}`;
+}
+
+/** 将余额不足通知重写为 QMSG 合规文案：移除 URL、IP 和敏感词，保留余额。 */
+export function rewriteQuotaExceededMessage(data) {
+  const amountText = formatBalanceValue(data.values?.[0]);
+  return `【额度提醒】\n\n您的 API 当前剩余额度为 ${amountText}，为避免服务受影响，请前往控制台查看并处理。`;
+}
+
+function formatBalanceValue(value) {
+  if (typeof value !== 'string') return '未知';
+
+  const trimmedValue = value.trim();
+  return trimmedValue || '未知';
 }
