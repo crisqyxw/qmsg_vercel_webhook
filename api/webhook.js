@@ -1,4 +1,4 @@
-import { sendMessageToQmsg, formatBalanceWarnMessage } from './_lib.js';
+import { sendMessageToQmsg, formatBalanceWarnMessage, formatSubTrackrMessage } from './_lib.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -24,10 +24,12 @@ export default async function handler(req, res) {
       }
     } else if (format === 'balance_warn') {
       message = formatBalanceWarnMessage(data);
+    } else if (format === 'subtrackr') {
+      message = formatSubTrackrMessage(data);
     } else {
       return res.status(400).json({
         success: false,
-        reason: 'Unknown request format: requires either "notify_body" (Artalk) or "type" (balance_warn) field'
+        reason: 'Unknown request format: requires "notify_body" (Artalk), "type" (balance_warn), or "event" (SubTrackr) field'
       });
     }
 
@@ -48,11 +50,12 @@ export default async function handler(req, res) {
 
 /**
  * 检测请求体格式类型
- * @returns {'artalk' | 'balance_warn' | null}
+ * @returns {'artalk' | 'balance_warn' | 'subtrackr' | null}
  */
 function detectFormat(data) {
   if (!data || typeof data !== 'object') return null;
   if (data.notify_body !== undefined) return 'artalk';
+  if (data.event !== undefined) return 'subtrackr';
   if (data.type !== undefined) return 'balance_warn';
   return null;
 }

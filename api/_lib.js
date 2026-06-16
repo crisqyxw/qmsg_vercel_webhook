@@ -122,3 +122,52 @@ function formatBalanceValue(value) {
   const trimmedValue = value.trim();
   return trimmedValue || '未知';
 }
+
+/** 将 SubTrackr webhook 转换为适合 QMSG 的消息文本。 */
+export function formatSubTrackrMessage(data) {
+  const subscription = data.subscription || {};
+  const eventLabel = getSubTrackrEventLabel(data.event);
+  const lines = [
+    `【${eventLabel}】`,
+    '',
+    data.message || data.title || '收到订阅提醒',
+  ];
+
+  if (subscription.name) lines.push(`订阅: ${subscription.name}`);
+  if (subscription.cost !== undefined) lines.push(`费用: ${formatSubscriptionCost(subscription)}`);
+  if (subscription.schedule) lines.push(`周期: ${subscription.schedule}`);
+  if (subscription.category) lines.push(`分类: ${subscription.category}`);
+  if (subscription.renewal_date) lines.push(`续费日期: ${formatSubTrackrDate(subscription.renewal_date)}`);
+  if (subscription.cancellation_date) lines.push(`取消日期: ${formatSubTrackrDate(subscription.cancellation_date)}`);
+
+  if (data.event === 'test') {
+    lines.push('测试消息已收到。');
+  }
+
+  return lines.join('\n');
+}
+
+function getSubTrackrEventLabel(event) {
+  const labels = {
+    test: 'SubTrackr 测试',
+    high_cost_alert: '高费用提醒',
+    renewal_reminder: '续费提醒',
+    cancellation_reminder: '取消提醒',
+  };
+
+  return labels[event] || 'SubTrackr 通知';
+}
+
+function formatSubscriptionCost(subscription) {
+  const symbol = subscription.currency_symbol || '';
+  const cost = subscription.cost;
+  const currency = subscription.currency ? ` ${subscription.currency}` : '';
+
+  return `${symbol}${cost}${currency}`.trim();
+}
+
+function formatSubTrackrDate(value) {
+  if (typeof value !== 'string') return value;
+
+  return value.replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$1年$2月$3日');
+}
